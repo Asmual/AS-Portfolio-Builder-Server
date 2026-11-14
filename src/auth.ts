@@ -9,7 +9,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigins: ["http://localhost:3000"],
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      enabled: !!process.env.GOOGLE_CLIENT_ID,
+    },
+  },
+  trustedOrigins: [
+    "http://localhost:3000",
+    process.env.FRONTEND_URL || "http://localhost:3000",
+  ],
   secret: process.env.BETTER_AUTH_SECRET || "as-portfolio-builder-secret-2026",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
 });
