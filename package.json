@@ -19,17 +19,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^7.10.1",
+    "better-auth": "^1.7.23",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "prisma": "8.0.0-rc.33",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@prisma/client": "^6.19.3",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },

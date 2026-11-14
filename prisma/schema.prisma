@@ -8,71 +8,65 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum Role {
-  SUPER_ADMIN
-  USER
-}
-
-enum PlanInterval {
-  MONTHLY
-  YEARLY
-}
-
-enum SubscriptionStatus {
-  INCOMPLETE
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  UNPAID
-}
-
-enum DomainStatus {
-  PENDING_VERIFICATION
-  ACTIVE
-  FAILED
-}
-
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  name          String?
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
   image         String?
-  role          Role           @default(USER)
-  emailVerified DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  workspaces    Workspace[]
-  accounts      Account[]
   sessions      Session[]
-}
+  accounts      Account[]
+  workspaces    Workspace[]
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+  @@map("user")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
 }
 
 model Workspace {
@@ -86,6 +80,8 @@ model Workspace {
 
   portfolios   Portfolio[]
   subscription Subscription?
+
+  @@map("workspace")
 }
 
 model Theme {
@@ -100,6 +96,8 @@ model Theme {
   updatedAt   DateTime    @updatedAt
 
   portfolios  Portfolio[]
+
+  @@map("theme")
 }
 
 model Portfolio {
@@ -112,7 +110,6 @@ model Portfolio {
   subdomain    String        @unique
   isPublished  Boolean       @default(false)
 
-  // Decoupled Content & Style configuration (Zod schema validated)
   contentData  Json
   styleConfig  Json
 
@@ -120,6 +117,8 @@ model Portfolio {
   updatedAt    DateTime      @updatedAt
 
   customDomain CustomDomain?
+
+  @@map("portfolio")
 }
 
 model CustomDomain {
@@ -127,39 +126,45 @@ model CustomDomain {
   portfolioId  String       @unique
   portfolio    Portfolio    @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   domainName   String       @unique
-  status       DomainStatus @default(PENDING_VERIFICATION)
+  status       String       @default("PENDING_VERIFICATION")
   sslActive    Boolean      @default(false)
   dnsTxtRecord String?
   verifiedAt   DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@map("custom_domain")
 }
 
 model Plan {
-  id          String         @id
-  name        String
-  tier        String
-  description String
-  priceMonth  Int
-  priceYear   Int
-  features    String[]
-  maxSites    Int            @default(1)
-  customDomain Boolean       @default(false)
-  analytics    Boolean       @default(false)
+  id           String         @id
+  name         String
+  tier         String
+  description  String
+  priceMonth   Int
+  priceYear    Int
+  features     String[]
+  maxSites     Int            @default(1)
+  customDomain Boolean        @default(false)
+  analytics    Boolean        @default(false)
 
   subscriptions Subscription[]
+
+  @@map("plan")
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  workspaceId          String             @unique
-  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  planId               String
-  plan                 Plan               @relation(fields: [planId], references: [id])
-  status               SubscriptionStatus @default(ACTIVE)
-  interval             PlanInterval       @default(MONTHLY)
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                String       @id @default(cuid())
+  workspaceId       String       @unique
+  workspace         Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId            String
+  plan              Plan         @relation(fields: [planId], references: [id])
+  status            String       @default("ACTIVE")
+  interval          String       @default("MONTHLY")
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("subscription")
 }
