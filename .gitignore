@@ -10,6 +10,7 @@ dist
 venv/
 *.log
 config.bat
+desktop.ini
 
 # VS Code
 .vscode/
