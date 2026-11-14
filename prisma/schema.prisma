@@ -1,0 +1,165 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  USER
+}
+
+enum PlanInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum DomainStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  FAILED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  image         String?
+  role          Role           @default(USER)
+  emailVerified DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  workspaces    Workspace[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  portfolios   Portfolio[]
+  subscription Subscription?
+}
+
+model Theme {
+  id          String      @id
+  name        String
+  category    String
+  description String
+  previewUrl  String
+  badge       String?
+  isPremium   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  portfolios  Portfolio[]
+}
+
+model Portfolio {
+  id           String        @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  themeId      String
+  theme        Theme         @relation(fields: [themeId], references: [id])
+  title        String
+  subdomain    String        @unique
+  isPublished  Boolean       @default(false)
+
+  // Decoupled Content & Style configuration (Zod schema validated)
+  contentData  Json
+  styleConfig  Json
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  customDomain CustomDomain?
+}
+
+model CustomDomain {
+  id           String       @id @default(cuid())
+  portfolioId  String       @unique
+  portfolio    Portfolio    @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  domainName   String       @unique
+  status       DomainStatus @default(PENDING_VERIFICATION)
+  sslActive    Boolean      @default(false)
+  dnsTxtRecord String?
+  verifiedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Plan {
+  id          String         @id
+  name        String
+  tier        String
+  description String
+  priceMonth  Int
+  priceYear   Int
+  features    String[]
+  maxSites    Int            @default(1)
+  customDomain Boolean       @default(false)
+  analytics    Boolean       @default(false)
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  workspaceId          String             @unique
+  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan               @relation(fields: [planId], references: [id])
+  status               SubscriptionStatus @default(ACTIVE)
+  interval             PlanInterval       @default(MONTHLY)
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
