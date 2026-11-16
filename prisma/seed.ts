@@ -332,6 +332,39 @@ async function main() {
       },
     });
 
+    // Seed Portfolio 3 (Rohan Sharma - Creative Designer Live Demo)
+    await prisma.portfolio.upsert({
+      where: { subdomain: "rohan" },
+      update: {
+        isPublished: true,
+        themeId: "creative-designer",
+      },
+      create: {
+        workspaceId: workspace.id,
+        themeId: "creative-designer",
+        title: "Rohan Sharma - UI/UX Designer",
+        subdomain: "rohan",
+        isPublished: true,
+        contentData: {
+          hero: {
+            title: "Rohan Sharma",
+            tagline: "UI/UX Designer",
+            headline: "HELLO, I'M",
+            shortBio: "I craft intuitive digital experiences that are beautiful, functional and user-centered.",
+          },
+          about: {
+            bio: "I'm a UI/UX Designer with 5+ years of experience crafting digital products that are intuitive, accessible and impactful. I believe in understanding user needs and turning ideas into seamless experiences.",
+          },
+        },
+        styleConfig: {
+          primaryColor: "#181716",
+          accentColor: "#C25E34",
+          fontFamily: "Playfair Display, serif",
+          darkMode: true,
+        },
+      },
+    });
+
     console.log("✅ Seeded demo workspace, active subscription, portfolios, and custom domains.");
   }
 

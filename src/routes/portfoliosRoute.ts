@@ -56,6 +56,39 @@ portfoliosRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/portfolios/by-subdomain/:subdomain - Public lookup for tenant websites
+portfoliosRouter.get("/by-subdomain/:subdomain", async (req: Request, res: Response) => {
+  try {
+    const subdomain = req.params.subdomain as string;
+
+    const portfolio = await prisma.portfolio.findUnique({
+      where: { subdomain },
+      include: {
+        theme: true,
+        customDomain: true,
+      },
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        message: `Portfolio with subdomain '${subdomain}' not found`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: portfolio,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch portfolio",
+      error: error?.message,
+    });
+  }
+});
+
 // GET /api/v1/portfolios/:id - Get single portfolio
 portfoliosRouter.get("/:id", async (req: Request, res: Response) => {
   try {
