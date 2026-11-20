@@ -15,6 +15,59 @@ const addDomainSchema = z.object({
     ),
 });
 
+// GET /api/v1/domains/resolve?domain=example.com - Lookup tenant subdomain for custom domain reverse proxy
+domainsRouter.get("/resolve", async (req: Request, res: Response) => {
+  try {
+    const domainQuery = (req.query.domain as string || "").trim().toLowerCase();
+    if (!domainQuery) {
+      return res.status(400).json({
+        success: false,
+        message: "Domain query parameter is required",
+      });
+    }
+
+    const domainRecord = await prisma.customDomain.findUnique({
+      where: { domainName: domainQuery },
+      include: {
+        portfolio: {
+          select: {
+            id: true,
+            subdomain: true,
+            themeId: true,
+            title: true,
+            isPublished: true,
+          },
+        },
+      },
+    });
+
+    if (!domainRecord || !domainRecord.portfolio) {
+      return res.status(404).json({
+        success: false,
+        message: "Domain not registered or associated with an active portfolio",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        subdomain: domainRecord.portfolio.subdomain,
+        portfolioId: domainRecord.portfolio.id,
+        themeId: domainRecord.portfolio.themeId,
+        domainName: domainRecord.domainName,
+        status: domainRecord.status,
+        sslActive: domainRecord.sslActive,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to resolve custom domain",
+      error: error?.message,
+    });
+  }
+});
+
 // GET /api/v1/domains - List all domains
 domainsRouter.get("/", async (_req: Request, res: Response) => {
   try {

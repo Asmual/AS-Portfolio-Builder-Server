@@ -13,8 +13,3 @@ desktop.ini
 # VS Code
 *.orc
 
-.env
-.env.*
-.env.local
-.env.production
-.vscode/
